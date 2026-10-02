@@ -164,63 +164,46 @@ for i from 1 to numberOfLines
     endif
 
     # --------------------------------------------------------
-    # 7. CI precision: heuristic check for endpoints that use
-    #    one decimal or three+ decimals instead of two.
-    #    Marked REVIEW because CI conventions can depend on DV.
+    # 7. Estimate + CI precision
+    #    Report only ONE review message per line, even if both CI
+    #    endpoints and the point estimate use inconsistent precision.
+    #
+    #    Paul's rule:
+    #    keep the point estimate and CI at the same precision,
+    #    usually two decimal places.
     # --------------------------------------------------------
 
-    # First CI endpoint: e.g. "CI from 0.031" or "CI [0.031"
+    precisionProblem = 0
+
+    # First CI endpoint: one decimal or three+ decimals
     if index_regex (line$, "(?i)<CI>[ \t]*(from[ \t]+|=[ \t]*)?[\[\(]?[ \t]*[+-]?[0-9]+\.[0-9](?=[^0-9]|$)") <> 0
-        nReview = nReview + 1
-        appendInfoLine: "[REVIEW] Line ", i, " | CI PRECISION"
-        appendInfoLine: "  Found:      ", line$
-        appendInfoLine: "  Check:      CI endpoints were usually requested at two decimal places."
-        appendInfoLine: ""
+        precisionProblem = 1
     endif
-
     if index_regex (line$, "(?i)<CI>[ \t]*(from[ \t]+|=[ \t]*)?[\[\(]?[ \t]*[+-]?[0-9]+\.[0-9]{3,}(?=[^0-9]|$)") <> 0
-        nReview = nReview + 1
-        appendInfoLine: "[REVIEW] Line ", i, " | CI PRECISION"
-        appendInfoLine: "  Found:      ", line$
-        appendInfoLine: "  Check:      CI endpoints were usually requested at two decimal places."
-        appendInfoLine: ""
+        precisionProblem = 1
     endif
 
-    # Second CI endpoint: e.g. "CI from 0.03 to 0.352" or "CI [0.03, 0.352]"
+    # Second CI endpoint: one decimal or three+ decimals
     if index_regex (line$, "(?i)<CI>.{0,60}(to|,)[ \t]*[+-]?[0-9]+\.[0-9](?=[^0-9]|$)") <> 0
-        nReview = nReview + 1
-        appendInfoLine: "[REVIEW] Line ", i, " | CI PRECISION"
-        appendInfoLine: "  Found:      ", line$
-        appendInfoLine: "  Check:      CI endpoints were usually requested at two decimal places."
-        appendInfoLine: ""
+        precisionProblem = 1
     endif
-
     if index_regex (line$, "(?i)<CI>.{0,60}(to|,)[ \t]*[+-]?[0-9]+\.[0-9]{3,}(?=[^0-9]|$)") <> 0
-        nReview = nReview + 1
-        appendInfoLine: "[REVIEW] Line ", i, " | CI PRECISION"
-        appendInfoLine: "  Found:      ", line$
-        appendInfoLine: "  Check:      CI endpoints were usually requested at two decimal places."
-        appendInfoLine: ""
+        precisionProblem = 1
     endif
 
-    # --------------------------------------------------------
-    # 8. Point estimate precision: heuristic check.
-    #    Paul asked point estimates to match the CI precision,
-    #    often two decimal places (e.g. 0.23 or 0.24 ln-ms).
-    # --------------------------------------------------------
+    # Point estimate: one decimal or three+ decimals
     if index_regex (line$, "(?i)(<estimate>|<ratio>|<coefficient>|<beta>|<OR>|<b>)[ \t]*=[ \t]*[+-]?[0-9]+\.[0-9](?=[^0-9]|$)") <> 0
-        nReview = nReview + 1
-        appendInfoLine: "[REVIEW] Line ", i, " | POINT-ESTIMATE PRECISION"
-        appendInfoLine: "  Found:      ", line$
-        appendInfoLine: "  Check:      match the point estimate to the CI precision; if the CI uses two decimals, write two decimals here too."
-        appendInfoLine: ""
+        precisionProblem = 1
+    endif
+    if index_regex (line$, "(?i)(<estimate>|<ratio>|<coefficient>|<beta>|<OR>|<b>)[ \t]*=[ \t]*[+-]?[0-9]+\.[0-9]{3,}(?=[^0-9]|$)") <> 0
+        precisionProblem = 1
     endif
 
-    if index_regex (line$, "(?i)(<estimate>|<ratio>|<coefficient>|<beta>|<OR>|<b>)[ \t]*=[ \t]*[+-]?[0-9]+\.[0-9]{3,}(?=[^0-9]|$)") <> 0
+    if precisionProblem = 1
         nReview = nReview + 1
-        appendInfoLine: "[REVIEW] Line ", i, " | POINT-ESTIMATE PRECISION"
+        appendInfoLine: "[REVIEW] Line ", i, " | ESTIMATE & CI PRECISION"
         appendInfoLine: "  Found:      ", line$
-        appendInfoLine: "  Check:      match the point estimate to the CI precision; Paul often preferred two decimal places."
+        appendInfoLine: "  Check:      report the point estimate and CI at the same precision, usually two decimal places."
         appendInfoLine: ""
     endif
 
